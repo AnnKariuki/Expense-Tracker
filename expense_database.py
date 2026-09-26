@@ -9,7 +9,10 @@ from pathlib import Path
 import csv
 from expense import Expense
 import datetime
+import tempfile
+import os
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
+
 class ExpenseDatabase:
 
     db_path = Path.cwd() / "expenses.csv"
@@ -34,11 +37,15 @@ class ExpenseDatabase:
             raise
         return expenses
 
-    def save_database(self, expenses):
+    def save_database(self, expenses: list[Expense]) -> None:
+        # atomic replacement to help with transaction atomicity - write operations either comp]etely fail or succeed. os.replace After replacement, the source file no longer exists, 
+        # and the destination contains the source file's content. write to a temporary file then atomically replace the target. This ensures the target is always in a consistent state.
+        temp = tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) # this creates and opens a new file so dont open() in the with block. 
+        # mode here is w not w+b because csv writers expect strings not bytes
         try: 
-            with open(self.db_path, "w", newline='') as csvfile:
+            with temp:
                 fieldnames = ["id","date", "description", "amount"]
-                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                writer = csv.DictWriter(temp, fieldnames=fieldnames)
                 writer.writeheader()
                 for expense in expenses:
                     row = {
@@ -49,11 +56,14 @@ class ExpenseDatabase:
                     }
                     # have to pass in a dictionary to writerow
                     writer.writerow(row)
-        except Exception as e:
-            print(f"An error occured when saving database {e}")
+            # temp is closed at this point.
+            # Replace the old database only after the entire new CSV
+            # has been successfully written.
+            os.replace(temp.name, self.db_path)
+        except:
+            # Clean up temp file if replace fails. we can access the file after we exited the context manager because we did delete=False so it was not immediately deleted
+            os.unlink(temp.name)
             raise
-
-        
 
 # for testing purposes
 def write_database():
@@ -74,4 +84,6 @@ result = ExpenseDatabase().load_database()
 print(f"{result[0].id} huh")
 
 exp = [Expense(1, datetime.datetime.now(), description = "new", amount=4.0), Expense(2, datetime.datetime.now(), description = "new", amount=4.0)]
+ExpenseDatabase().save_database(exp)
+
 
