@@ -27,10 +27,13 @@ class ExpenseTracker:
            "amount": int(args.amount) if args.amount.isdigit() else float(args.amount),
            "date": datetime.datetime.now()
         }
-        # we do not need to have expensetracker reload it's expenses since we are undating self.expenses here
+        # we do not need to have expensetracker reload it's expenses since we are updating self.expenses here
         self.expenses.append(Expense(**expense))
+        self.database.save_database(self.expenses)
 
-    def highest_id(self):
+    def highest_id(self): # placed this method in expense tracker not in database class because 1, it needs access to all expenses and the db's class work should only be interacting with csv
+        #file so that even if I chnaged my id method to UUIDS the db class would not have to be touched. separtion of concerns
+        # in my implementation ids are not unique since if i delete id 3 and add a new expense it will take that id 3. this isn't great in real production systems where ids need to be unique for easy identification
         # maximum = 0 
         # for expense in self.expenses:
         #     maximum = max(maximum, expense.id)

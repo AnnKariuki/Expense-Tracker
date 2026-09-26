@@ -24,6 +24,8 @@ class Expense:
     def date(self, value):
         if not isinstance(value, datetime.datetime):
             raise ValueError("date must be a datetime object")
+        # we will have the date here remain a datetime object and we will not change it to a string. the conversion belongs in the persistence boundary where we store the value as a string and
+        # when we load it we turn it back to a datetime object
         self._date = value
 
     @property

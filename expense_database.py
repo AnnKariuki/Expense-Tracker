@@ -40,7 +40,7 @@ class ExpenseDatabase:
     def save_database(self, expenses: list[Expense]) -> None:
         # atomic replacement to help with transaction atomicity - write operations either comp]etely fail or succeed. os.replace After replacement, the source file no longer exists, 
         # and the destination contains the source file's content. write to a temporary file then atomically replace the target. This ensures the target is always in a consistent state.
-        temp = tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) # this creates and opens a new file so dont open() in the with block. 
+        temp = tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False, newline="") # this creates and opens a new file so dont open() in the with block. 
         # mode here is w not w+b because csv writers expect strings not bytes
         try: 
             with temp:
@@ -66,22 +66,22 @@ class ExpenseDatabase:
             raise
 
 # for testing purposes
-def write_database():
-    db_path = Path.cwd() / "expenses.csv"
-    DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
-    with open(db_path, 'w', newline='') as csvfile:
-        fieldnames = ['id', 'date', 'description', 'amount']
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+# def write_database():
+#     db_path = Path.cwd() / "expenses.csv"
+#     DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
+#     with open(db_path, 'w', newline='') as csvfile:
+#         fieldnames = ['id', 'date', 'description', 'amount']
+#         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
-        writer.writeheader()
-        writer.writerow({'id':'1', "date": datetime.datetime.now().strftime(DATE_FORMAT), 'description': 'get rich', 'amount': 100})
-        writer.writerow({'id':'2', "date": datetime.datetime.now().strftime(DATE_FORMAT), 'description': 'get really rich', 'amount': 10000000})
+#         writer.writeheader()
+#         writer.writerow({'id':'1', "date": datetime.datetime.now().strftime(DATE_FORMAT), 'description': 'get rich', 'amount': 100})
+#         writer.writerow({'id':'2', "date": datetime.datetime.now().strftime(DATE_FORMAT), 'description': 'get really rich', 'amount': 10000000})
 
 
-write_database()
+# write_database()
 
-result = ExpenseDatabase().load_database()
-print(f"{result[0].id} huh")
+# result = ExpenseDatabase().load_database()
+# print(f"{result[0].id} huh")
 
 exp = [Expense(1, datetime.datetime.now(), description = "new", amount=4.0), Expense(2, datetime.datetime.now(), description = "new", amount=4.0)]
 ExpenseDatabase().save_database(exp)
