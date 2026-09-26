@@ -64,26 +64,3 @@ class ExpenseDatabase:
             # Clean up temp file if replace fails. we can access the file after we exited the context manager because we did delete=False so it was not immediately deleted
             os.unlink(temp.name)
             raise
-
-# for testing purposes
-# def write_database():
-#     db_path = Path.cwd() / "expenses.csv"
-#     DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
-#     with open(db_path, 'w', newline='') as csvfile:
-#         fieldnames = ['id', 'date', 'description', 'amount']
-#         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-
-#         writer.writeheader()
-#         writer.writerow({'id':'1', "date": datetime.datetime.now().strftime(DATE_FORMAT), 'description': 'get rich', 'amount': 100})
-#         writer.writerow({'id':'2', "date": datetime.datetime.now().strftime(DATE_FORMAT), 'description': 'get really rich', 'amount': 10000000})
-
-
-# write_database()
-
-# result = ExpenseDatabase().load_database()
-# print(f"{result[0].id} huh")
-
-exp = [Expense(1, datetime.datetime.now(), description = "new", amount=4.0), Expense(2, datetime.datetime.now(), description = "new", amount=4.0)]
-ExpenseDatabase().save_database(exp)
-
-

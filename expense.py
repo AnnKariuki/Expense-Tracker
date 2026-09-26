@@ -49,11 +49,3 @@ class Expense:
         if value <= 0:
             raise ValueError("Amount can not be a negative number or equal 0")
         self._amount = value
-
-# for testing purposes
-exp = Expense(1, datetime.datetime.now(), description = "new", amount=4.0)
-print(exp.id)
-print(exp.date)
-print(exp.description)
-print(exp.amount)
-exp.amount = 3

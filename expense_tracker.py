@@ -42,7 +42,3 @@ class ExpenseTracker:
         # max here returns the expense object with the max id then we access it's id with .id and return that
         # remember an empty list or any empty Sequences and Collections are falsy
         return max(self.expenses, key= lambda x: x.id).id if self.expenses else 0
-
-high = ExpenseTracker().highest_id()
-print(high)
-print(bool([]))
