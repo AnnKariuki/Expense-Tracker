@@ -34,6 +34,8 @@ class ExpenseDatabase:
                     }
                     expense = Expense(**row)
                     expenses.append(expense)
+        except FileNotFoundError:
+            return [] # save_db uses mode=w which will create the file
         except Exception as e:
             print(f"An error occured when loading database {e}")
             # raise here re-raises the original exception with its traceback not the generic Exception so if it's valueerror that is what will be raised.
