@@ -5,7 +5,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(prog="Expense Tracker", description="Simple expense tracker application to manage your finances", formatter_class=argparse.RawTextHelpFormatter) 
     # RawTextHelpFormatter maintains whitespace for all sorts of help text
     subparsers = parser.add_subparsers(required=True)
-    # we will use one expensetracker instance to handle all subcommands
+    # we will use one expensetracker instance to handle all subcommands so one initialization
     tracker = ExpenseTracker()
     add_subparser = subparsers.add_parser('add', help="To add an expense run: <expense-tracker> <description> <amount>")
     add_subparser.add_argument("description")
@@ -26,7 +26,7 @@ def main() -> None:
     list_subparser.set_defaults(func=tracker.list_expenses)
 
     summary_subparser = subparsers.add_parser('summary',help="""To view a summary of all your expenses run: <expense-tracker> summary\nTo view a summary for a specific month of current year run: <expense-tracker> summary --month=<month>""")
-    summary_subparser.add_argument("--month", type=int)
+    summary_subparser.add_argument("--month", type=int, choices=[1,2,3,4,5,6,7,8,9,10,11,12])
     summary_subparser.set_defaults(func=tracker.summary_expenses)
 
     args = parser.parse_args()

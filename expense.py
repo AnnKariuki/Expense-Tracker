@@ -47,5 +47,5 @@ class Expense:
         if not isinstance(value, (int, float)):
             raise ValueError("Amount must be an integer or a float")
         if value < 0:
-            raise ValueError("Amount can not be a negative number or equal 0")
+            raise ValueError("Amount can not be a negative number")
         self._amount = value

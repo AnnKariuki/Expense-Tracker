@@ -14,7 +14,9 @@ from expense_database import ExpenseDatabase
 import datetime
 from tabulate import tabulate
 from enum import Enum
+
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
+
 class ExpenseTracker:
     def __init__(self):
         # composition. this class does not manage database operations hence we call the class that does
@@ -37,7 +39,7 @@ class ExpenseTracker:
 
     def highest_id(self) -> int: # placed this method in expense tracker not in database class because 1, it needs access to all expenses and the db's class work should only be interacting with csv
         #file so that even if I chnaged my id method to UUIDS the db class would not have to be touched. separtion of concerns
-        # in my implementation ids are not unique since if i delete id 3 and add a new expense it will take that id 3. this isn't great in real production systems where ids need to be unique for easy identification
+        # in my implementation ids are not unique since if i delete id 3 and the highest id was three and add a new expense it will take that id 3. this isn't great in real production systems where ids need to be unique for easy identification
         # maximum = 0 
         # for expense in self.expenses:
         #     maximum = max(maximum, expense.id)
@@ -117,20 +119,22 @@ class ExpenseTracker:
             october = 10
             november = 11
             december = 12
-            
+
         total = 0
         if args.month:
             # month = args.month.lower()
             # print(month)
             current_year = datetime.datetime.now().year
+            month = Month(args.month)
+            month_has_expense = False
             for expense in self.expenses:
                 # if Month[month].value == expense.date.month:
                 if (expense.date.month == args.month
                     and expense.date.year == current_year):
                     total += expense.amount
-                    month = Month(args.month)
-            print(f"Total expenses for {month.name.capitalize()}: "
-                 f"${total:.2f}")
+                    month_has_expense = True
+            print(f"Total expenses for {month.name.capitalize()}: " # capitalizes the first character of string
+                 f"${total:.2f}") if month_has_expense else print(f" {month.name.capitalize()} has no expenses")
         else:
             for expense in self.expenses:
                     total += expense.amount

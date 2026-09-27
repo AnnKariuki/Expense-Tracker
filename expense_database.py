@@ -12,6 +12,7 @@ from expense import Expense
 import datetime
 import tempfile
 import os
+
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 class ExpenseDatabase:
