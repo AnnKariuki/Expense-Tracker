@@ -24,6 +24,9 @@ def main() -> None:
     list_subparser = subparsers.add_parser('list', help="To list all your expenses run: <expense-tracker> list")
     list_subparser.set_defaults(func=tracker.list_expenses)
 
+    summary_subparser = subparsers.add_parser('summary', help="To view a summary of all your expenses run: <expense-tracker> summary")
+    summary_subparser.set_defaults(func=tracker.summary_expenses)
+
     args = parser.parse_args()
     args.func(args)
     

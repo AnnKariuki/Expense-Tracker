@@ -84,7 +84,7 @@ class ExpenseTracker:
         else:
             print(f"There is no expense with id: {args.id}")
 
-    def list_expenses(self, args) -> None:
+    def list_expenses(self, args:argparse.Namespace) -> None:
         # print(tabulate(self.expenses))# doesn't work TypeError: 'Expense' object is not iterable
         # table_data = [vars(expense) for expense in self.expenses] # turn each expense into a dict of key value pairs and place them in a list. now expense is iterable
         # table_data_clean = [{key[1:]: value for key, value in expense.items()} for expense in table_data] # for exach expense create a new dictionary
@@ -101,4 +101,11 @@ class ExpenseTracker:
             }
             table_data.append(expense_row)
         print(tabulate(table_data, headers="keys", tablefmt="grid"))
+
+    def summary_expenses(self, args:argparse.Namespace) -> None:
+        total = 0
+        for expense in self.expenses:
+            total += expense.amount
+        print(f"Total expenses: ${total:.2f}")
+        
          
