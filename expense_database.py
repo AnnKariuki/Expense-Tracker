@@ -3,6 +3,7 @@
 # save_database()
 # populate_database()
 # is_database_empty()
+# serialization/deserialization
 # expense tracker should not know the database is a csv file so we need to return something that hides this implementation so we return a list of expenses.
 # It doesn't care whether those objects originally came from CSV, JSON, SQLite, PostgreSQL, etc.
 from pathlib import Path
@@ -27,7 +28,7 @@ class ExpenseDatabase:
                         "id": int(line['id']),
                         "date": datetime.datetime.strptime(line['date'], DATE_FORMAT),
                         "description": line['description'],
-                        "amount": int(line['amount']) if line['amount'].isdigit() else float(line['amount']),
+                        "amount": float(line['amount']),
                     }
                     expense = Expense(**row)
                     expenses.append(expense)
@@ -40,10 +41,12 @@ class ExpenseDatabase:
     def save_database(self, expenses: list[Expense]) -> None:
         # atomic replacement to help with transaction atomicity - write operations either comp]etely fail or succeed. os.replace After replacement, the source file no longer exists, 
         # and the destination contains the source file's content. write to a temporary file then atomically replace the target. This ensures the target is always in a consistent state.
-        temp = tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False, newline="") # this creates and opens a new file so dont open() in the with block. 
+        temp = tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False, newline="", dir=self.db_path.parent) # this creates and opens a new file so dont open() in the with block. 
         # mode here is w not w+b because csv writers expect strings not bytes
+        # os.replace() is reliably atomic when the source and destination are on the same filesystem. 
+        # Putting the temp file in the same directory ensures that. when using tempfile you use uses the operating system's default temporary directory
         try: 
-            with temp:
+            with temp: # temp files/dirs from tempfile module can be used as context managers
                 fieldnames = ["id","date", "description", "amount"]
                 writer = csv.DictWriter(temp, fieldnames=fieldnames)
                 writer.writeheader()
@@ -62,5 +65,5 @@ class ExpenseDatabase:
             os.replace(temp.name, self.db_path)
         except:
             # Clean up temp file if replace fails. we can access the file after we exited the context manager because we did delete=False so it was not immediately deleted
-            os.unlink(temp.name)
+            os.unlink(temp.name) # used to permanently delete a file path from the file system
             raise
