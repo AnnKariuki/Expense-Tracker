@@ -30,6 +30,7 @@ class ExpenseDatabase:
                         "date": datetime.datetime.strptime(line['date'], DATE_FORMAT),
                         "description": line['description'],
                         "amount": float(line['amount']),
+                        "category": line['category']
                     }
                     expense = Expense(**row)
                     expenses.append(expense)
@@ -48,7 +49,7 @@ class ExpenseDatabase:
         # Putting the temp file in the same directory ensures that. when using tempfile you use uses the operating system's default temporary directory
         try: 
             with temp: # temp files/dirs from tempfile module can be used as context managers
-                fieldnames = ["id","date", "description", "amount"]
+                fieldnames = ["id","date", "description", "amount", "category"]
                 writer = csv.DictWriter(temp, fieldnames=fieldnames)
                 writer.writeheader()
                 for expense in expenses:
@@ -56,7 +57,8 @@ class ExpenseDatabase:
                         "id": str(expense.id),
                         "date": expense.date.strftime(DATE_FORMAT),
                         "description": expense.description,
-                        "amount": str(expense.amount)
+                        "amount": str(expense.amount),
+                        "category": expense.category
                     }
                     # have to pass in a dictionary to writerow
                     writer.writerow(row)

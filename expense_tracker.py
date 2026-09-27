@@ -30,7 +30,8 @@ class ExpenseTracker:
            "id": id,
            "description": args.description,
            "amount": args.amount,
-           "date": datetime.datetime.now()
+           "date": datetime.datetime.now(),
+           "category": args.category
         }
         # we do not need to have expensetracker reload it's expenses since we are updating self.expenses here
         self.expenses.append(Expense(**expense))
@@ -50,8 +51,8 @@ class ExpenseTracker:
         return max(self.expenses, key= lambda x: x.id).id if self.expenses else 0
 
     def update_expense(self, args:argparse.Namespace) -> None:
-        if args.amount is None and args.description is None:
-            raise ValueError("At least one of --amount or --description must be provided")
+        if args.amount is None and args.description is None and args.category is None:
+            raise ValueError("At least one of --amount, --description or --category must be provided")
         updated = False
         for expense in self.expenses:
             if expense.id == args.id:
@@ -59,6 +60,8 @@ class ExpenseTracker:
                     expense.amount = args.amount
                 if args.description is not None: # same here with "" maybe client wanted to clear description but "" is falsy so description would not get the update
                     expense.description = args.description
+                if args.category is not None:
+                    expense.category = args.category # don't need to lower here or in add_expense the expense class cleans this up for us by lowering it itself
                 # decided not to update date as date in our app means when the expense was created
                 updated = True
                 break
@@ -94,15 +97,29 @@ class ExpenseTracker:
         # print(tabulate(table_data_clean, headers="keys", tablefmt="grid")) # headers here maps the keys to columns
         # we will not follow the implementation above even though technically correct because vars is reaching directly into the internal private values of expense.
         # list_expenses() should not be able to inspect the internal storage of Expense. We should be using the public interface that Expense deliberately exposes
-        table_data = []
-        for expense in self.expenses:
-            expense_row = {
-            "id": expense.id,
-            "description": expense.description,
-            "amount": expense.amount,
-            "date": expense.date
-            }
-            table_data.append(expense_row)
+        table_data = [] # the expense objects need to be iterables for tabulate to work tabular_data: Mapping[Any, Iterable[Any]] | Iterable[Iterable[Any]],
+        if args.category: # purposefully keeping out ""
+            for expense in self.expenses:
+                if args.category.lower() == expense.category:
+                    expense_row = {
+                        "id": expense.id,
+                        "description": expense.description,
+                        "amount": expense.amount,
+                        "date": expense.date,
+                        "category": expense.category
+                        }
+                    table_data.append(expense_row)
+        else:
+             for expense in self.expenses:
+                    expense_row = {
+                        "id": expense.id,
+                        "description": expense.description,
+                        "amount": expense.amount,
+                        "date": expense.date,
+                        "category": expense.category
+                        }
+                    table_data.append(expense_row)
+            
         print(tabulate(table_data, headers="keys", tablefmt="grid"))
 
     def summary_expenses(self, args:argparse.Namespace) -> None:

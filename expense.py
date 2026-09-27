@@ -2,11 +2,12 @@ import datetime
 
 class Expense:
     """class managing an expense"""
-    def __init__(self, id, date, description, amount):
+    def __init__(self, id, date, description, amount, category):
         self._id = id
         self.date = date
         self.description = description
         self.amount = amount
+        self.category = category
 
     # we have id with a getter only no setter. we set it when we initialize only then after that when someone tries to set it with exp.id it won't work. it fails with
     # AttributeError: property 'id' of 'Expense' object has no setter hence making our id property read only. publically readable not publically settable
@@ -44,8 +45,18 @@ class Expense:
 
     @amount.setter
     def amount(self, value):
-        if not isinstance(value, (int, float)):
-            raise ValueError("Amount must be an integer or a float")
+        if not isinstance(value, float):
+            raise ValueError("Amount must be a float")
         if value < 0:
             raise ValueError("Amount can not be a negative number")
         self._amount = value
+
+    @property
+    def category(self):
+        return self._category
+
+    @category.setter
+    def category(self, value):
+        if not isinstance(value, str):
+            raise ValueError("Category must be a string")
+        self._category = value.lower()
