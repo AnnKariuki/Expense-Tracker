@@ -46,4 +46,18 @@ class ExpenseTracker:
         return max(self.expenses, key= lambda x: x.id).id if self.expenses else 0
 
     def update_expense(self, args:argparse.Namespace) -> None:
-        pass
+        if args.amount is None and args.description is None:
+            raise ValueError("At least one of --amount or --description must be provided")
+        updated = False
+        for expense in self.expenses:
+            if expense.id == args.id:
+                if args.amount is not None: # not if args.amount cause we want to assess actual value not truthiness for example 0.00 would fail even though it is legitimate
+                    expense.amount = args.amount
+                if args.description is not None: # same here with "" maybe client wanted to clear description but "" is falsy so description would not get the update
+                    expense.description = args.description
+                updated = True
+                break
+        if updated:
+            self.database.save_database(self.expenses)
+        else:
+            print(f"There is no expense with id: {args.id}")
