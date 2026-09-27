@@ -12,6 +12,7 @@ from expense import Expense
 import argparse
 from expense_database import ExpenseDatabase
 import datetime
+from tabulate import tabulate
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 class ExpenseTracker:
     def __init__(self):
@@ -55,10 +56,12 @@ class ExpenseTracker:
                     expense.amount = args.amount
                 if args.description is not None: # same here with "" maybe client wanted to clear description but "" is falsy so description would not get the update
                     expense.description = args.description
+                # decided not to update date as date in our app means when the expense was created
                 updated = True
                 break
         if updated:
             self.database.save_database(self.expenses)
+            print(f"updated expense {args.id}")
         else:
             print(f"There is no expense with id: {args.id}")
 
@@ -77,5 +80,25 @@ class ExpenseTracker:
                 break
         if deleted:
             self.database.save_database(self.expenses)
+            print(f"deleted expense {args.id}")
         else:
             print(f"There is no expense with id: {args.id}")
+
+    def list_expenses(self, args) -> None:
+        # print(tabulate(self.expenses))# doesn't work TypeError: 'Expense' object is not iterable
+        # table_data = [vars(expense) for expense in self.expenses] # turn each expense into a dict of key value pairs and place them in a list. now expense is iterable
+        # table_data_clean = [{key[1:]: value for key, value in expense.items()} for expense in table_data] # for exach expense create a new dictionary
+        # print(tabulate(table_data_clean, headers="keys", tablefmt="grid")) # headers here maps the keys to columns
+        # we will not follow the implementation above even though technically correct because vars is reaching directly into the internal private values of expense.
+        # list_expenses() should not be able to inspect the internal storage of Expense. We should be using the public interface that Expense deliberately exposes
+        table_data = []
+        for expense in self.expenses:
+            expense_row = {
+            "id": expense.id,
+            "description": expense.description,
+            "amount": expense.amount,
+            "date": expense.date
+            }
+            table_data.append(expense_row)
+        print(tabulate(table_data, headers="keys", tablefmt="grid"))
+         

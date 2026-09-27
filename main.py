@@ -21,6 +21,9 @@ def main() -> None:
     delete_subparser.add_argument("id", type=int)
     delete_subparser.set_defaults(func=tracker.delete_expense)
 
+    list_subparser = subparsers.add_parser('list', help="To list all your expenses run: <expense-tracker> list")
+    list_subparser.set_defaults(func=tracker.list_expenses)
+
     args = parser.parse_args()
     args.func(args)
     
