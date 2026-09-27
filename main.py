@@ -17,7 +17,9 @@ def main() -> None:
     update_subparser.add_argument("--amount", type=float)
     update_subparser.set_defaults(func=tracker.update_expense)
 
-    # CLI error handling - make sure we are passing in correct types into Expense tracker incase some values slip in for example amount=-20 or name
+    delete_subparser = subparsers.add_parser('delete', help="To delete an expense run: <expense-tracker> <id>")
+    delete_subparser.add_argument("id", type=int)
+    delete_subparser.set_defaults(func=tracker.delete_expense)
 
     args = parser.parse_args()
     args.func(args)
