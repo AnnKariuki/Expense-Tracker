@@ -13,6 +13,7 @@ import argparse
 from expense_database import ExpenseDatabase
 import datetime
 from tabulate import tabulate
+from enum import Enum
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 class ExpenseTracker:
     def __init__(self):
@@ -103,9 +104,36 @@ class ExpenseTracker:
         print(tabulate(table_data, headers="keys", tablefmt="grid"))
 
     def summary_expenses(self, args:argparse.Namespace) -> None:
+        class Month(Enum):
+            january = 1
+            february = 2
+            march = 3
+            april = 4
+            may = 5
+            june = 6
+            july = 7
+            august = 8
+            september = 9
+            october = 10
+            november = 11
+            december = 12
+            
         total = 0
-        for expense in self.expenses:
-            total += expense.amount
-        print(f"Total expenses: ${total:.2f}")
+        if args.month:
+            # month = args.month.lower()
+            # print(month)
+            current_year = datetime.datetime.now().year
+            for expense in self.expenses:
+                # if Month[month].value == expense.date.month:
+                if (expense.date.month == args.month
+                    and expense.date.year == current_year):
+                    total += expense.amount
+                    month = Month(args.month)
+            print(f"Total expenses for {month.name.capitalize()}: "
+                 f"${total:.2f}")
+        else:
+            for expense in self.expenses:
+                    total += expense.amount
+            print(f"Total expenses: ${total:.2f}")
         
          
