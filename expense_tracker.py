@@ -14,28 +14,65 @@ from expense_database import ExpenseDatabase
 import datetime
 from tabulate import tabulate
 from enum import Enum
+from budget_database import BudgetDatabase
 
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
+class Month(Enum):
+    january = 1
+    february = 2
+    march = 3
+    april = 4
+    may = 5
+    june = 6
+    july = 7
+    august = 8
+    september = 9
+    october = 10
+    november = 11
+    december = 12
+
 
 class ExpenseTracker:
     def __init__(self):
         # composition. this class does not manage database operations hence we call the class that does
-        self.database = ExpenseDatabase()
+        self.expense_db = ExpenseDatabase()
         # load all expenses and let the tracker class own the collection
-        self.expenses = self.database.load_database()
+        self.expenses = self.expense_db.load_database()
+        self.budget_db = BudgetDatabase()
+        self.budgets = self.budget_db.load_database()
+
+
+    def check_over_budget(self, month, year) -> None:
+        if (month, year) in self.budgets:
+            current_budget = self.budgets[(month, year)] # if blocks do not introduce a new scope. variables defined in here can be used in function scope
+        else:
+            # we will not tell the user to add a budget cause every time someone adds an expense without having configured budgets, the CLI starts nagging them about an optional 
+            # feature. we will also not set a budget user has to do it on their own
+            return 
+        monthly_expense = 0
+        for expense in self.expenses:
+            if expense.date.month == month and expense.date.year == year:
+                monthly_expense += expense.amount
+
+        if current_budget < monthly_expense:
+            print(f"warning {Month(month).name.capitalize()} {year} expenses {monthly_expense} exceed your {current_budget} budget.")
+
+        
 
     def add_expense(self, args: argparse.Namespace) -> None:
         id = self.highest_id() + 1
+        date = datetime.datetime.now()
         expense = {
            "id": id,
            "description": args.description,
            "amount": args.amount,
-           "date": datetime.datetime.now(),
+           "date": date,
            "category": args.category
         }
         # we do not need to have expensetracker reload it's expenses since we are updating self.expenses here
         self.expenses.append(Expense(**expense))
-        self.database.save_database(self.expenses)
+        self.expense_db.save_database(self.expenses)
+        self.check_over_budget(date.month, date.year)
         print(f"Task added successfully (ID: {id})")
 
     def highest_id(self) -> int: # placed this method in expense tracker not in database class because 1, it needs access to all expenses and the db's class work should only be interacting with csv
@@ -63,11 +100,14 @@ class ExpenseTracker:
                 if args.category is not None:
                     expense.category = args.category # don't need to lower here or in add_expense the expense class cleans this up for us by lowering it itself
                 # decided not to update date as date in our app means when the expense was created
+                updated_expense = expense
                 updated = True
                 break
         if updated:
-            self.database.save_database(self.expenses)
+            self.expense_db.save_database(self.expenses)
             print(f"updated expense {args.id}")
+            if args.amount is not None: # decided to only notify users of over exceeding the budget only when amount is updated not when description or category is updated
+                self.check_over_budget(updated_expense.date.month, updated_expense.date.year)
         else:
             print(f"There is no expense with id: {args.id}")
 
@@ -85,7 +125,7 @@ class ExpenseTracker:
                 deleted = True
                 break
         if deleted:
-            self.database.save_database(self.expenses)
+            self.expense_db.save_database(self.expenses)
             print(f"deleted expense {args.id}")
         else:
             print(f"There is no expense with id: {args.id}")
@@ -123,26 +163,11 @@ class ExpenseTracker:
         print(tabulate(table_data, headers="keys", tablefmt="grid"))
 
     def summary_expenses(self, args:argparse.Namespace) -> None:
-        class Month(Enum):
-            january = 1
-            february = 2
-            march = 3
-            april = 4
-            may = 5
-            june = 6
-            july = 7
-            august = 8
-            september = 9
-            october = 10
-            november = 11
-            december = 12
-
         total = 0
         if args.month:
             # month = args.month.lower()
             # print(month)
             current_year = datetime.datetime.now().year
-            month = Month(args.month)
             month_has_expense = False
             for expense in self.expenses:
                 # if Month[month].value == expense.date.month:
@@ -150,11 +175,23 @@ class ExpenseTracker:
                     and expense.date.year == current_year):
                     total += expense.amount
                     month_has_expense = True
+            month = Month(args.month) # Month.september
             print(f"Total expenses for {month.name.capitalize()}: " # capitalizes the first character of string
                  f"${total:.2f}") if month_has_expense else print(f" {month.name.capitalize()} has no expenses")
         else:
             for expense in self.expenses:
                     total += expense.amount
             print(f"Total expenses: ${total:.2f}")
+
+    def set_monthly_budget(self, args: argparse.Namespace):
+        month = args.month
+        year = args.year
+        budget = args.budget
+        # print("BEFORE:", self.budgets)
+        if (month, year) in self.budgets:
+            # in this case we are performing an upsert and telling the user
+            print(f"you updated the budget of the month:{ Month(args.month).name.capitalize()}, year, {year} to {budget}")
+        self.budgets[(month, year)] = budget
+        self.budget_db.save_database(self.budgets) # need to persist data to db cause in memory dict will dissapear plus the changes as soon as process ends
         
          
