@@ -33,6 +33,7 @@ class Month(Enum):
 
 
 class ExpenseTracker:
+    """class that manages all expenses"""
     def __init__(self):
         # composition. this class does not manage database operations hence we call the class that does
         self.expense_db = ExpenseDatabase()

@@ -12,6 +12,7 @@ import datetime
 import tempfile
 import os
 class BudgetDatabase:
+    """peristence boundary for budgets"""
     budget_db_path = Path.cwd() / "budgets.csv"
 
     def load_database(self) -> dict[tuple[int,int], float]:

@@ -16,7 +16,7 @@ import os
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 class ExpenseDatabase:
-
+    """peristence boundary for all expenses"""
     db_path = Path.cwd() / "expenses.csv"
 
     def load_database(self) -> list[Expense]:
