@@ -61,7 +61,7 @@ class Expense:
             raise ValueError("Category must be a string")
         self._category = value.lower()
 
-    # we are going to define this to customize how expense objects are compared for equality using the == operator. this will help in the way we write test where without this we would have to compare each attribute to determine is assertequal is true
+    # we are going to define this to customize how expense objects are compared for equality using the == operator. this will help in the way we write test where without this we would have to compare each attribute of different expense objects to determine is assertequal is true
     # When you write a == b, Python internally translates that expression into a method call: a.__eq__(b)
     # By default, custom user-defined classes inherit their __eq__ behavior from the base object class. This default implementation checks for object identity, meaning it only returns True if both variables point to the exact same object in memory (identical to using the is operator)
     # If you want two distinct object instances with identical attribute values to be considered equal, you must override __eq_

@@ -49,62 +49,23 @@ class TestSaveDatabase(unittest.TestCase):
         self.db.db_path = self.temp_database_path
 
     def test_save_database_success(self):
-        expenses = [
-            Expense(
-                id=1,
-                date=datetime.datetime.strptime(
-                    "2026-09-27 14:50:23",
-                    DATE_FORMAT
-                ),
-                description="Chipotle",
-                amount=20.0,
-                category="groceries"
-            ),
-            Expense(
-                id=2,
-                date=datetime.datetime.strptime(
-                    "2026-09-27 15:19:49",
-                    DATE_FORMAT
-                ),
-                description="Chipotle",
-                amount=20.123,
-                category="groceries"
-            )
-        ]
+        expenses = [Expense(id=1,date=datetime.datetime.strptime("2026-09-27 14:50:23",DATE_FORMAT),description="Chipotle",amount=20.0,category="groceries"),
+                    Expense(id=2,date=datetime.datetime.strptime("2026-09-27 15:19:49",DATE_FORMAT),description="Chipotle",amount=20.123,category="groceries")]
 
         self.db.save_database(expenses)
-
         result = []
 
         with open(self.db.db_path, newline="") as csv_file:
             reader = csv.DictReader(csv_file)
-
             for line in reader:
-                result.append(
-                    Expense(
-                        id=int(line["id"]),
-                        date=datetime.datetime.strptime(
-                            line["date"],
-                            DATE_FORMAT
-                        ),
-                        description=line["description"],
-                        amount=float(line["amount"]),
-                        category=line["category"]
-                    )
-                )
-
+                result.append(Expense(id=int(line["id"]),date=datetime.datetime.strptime(line["date"],DATE_FORMAT),description=line["description"],amount=float(line["amount"]),category=line["category"]))
         self.assertEqual(expenses, result)
 
     @patch("os.replace")
-    def test_save_database_cleans_up_temp_file_and_reraises_exception(
-        self,
-        mocked_replace
-    ):
+    def test_save_database_cleans_up_temp_file_and_reraises_exception(self, mocked_replace):
         mocked_replace.side_effect = OSError
-
         with self.assertRaises(OSError):
             self.db.save_database([])
-
         self.assertEqual(os.listdir(self.temp_dir), [])
 
 
@@ -112,38 +73,15 @@ class TestIntegrationSaveAndLoadDatabase(unittest.TestCase):
 
     def setUp(self):
         self.temp_dir = self.enterContext(tempfile.TemporaryDirectory())
-
         self.db = ExpenseDatabase()
         self.db.db_path = Path(self.temp_dir) / "expenses.csv"
 
     def test_save_and_load_database_success(self):
-        expenses = [
-            Expense(
-                id=1,
-                date=datetime.datetime.strptime(
-                    "2026-09-27 14:50:23",
-                    DATE_FORMAT
-                ),
-                description="Chipotle",
-                amount=20.0,
-                category="groceries"
-            ),
-            Expense(
-                id=2,
-                date=datetime.datetime.strptime(
-                    "2026-09-27 15:19:49",
-                    DATE_FORMAT
-                ),
-                description="Chipotle",
-                amount=20.123,
-                category="groceries"
-            )
-        ]
+        expenses = [Expense(id=1,date=datetime.datetime.strptime("2026-09-27 14:50:23",DATE_FORMAT),description="Chipotle",amount=20.0,category="groceries"),
+                    Expense(id=2,date=datetime.datetime.strptime("2026-09-27 15:19:49",DATE_FORMAT),description="Chipotle",amount=20.123,category="groceries")]
 
         self.db.save_database(expenses)
-
         result = self.db.load_database()
-
         self.assertEqual(expenses, result)
     
 
