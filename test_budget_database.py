@@ -96,6 +96,7 @@ class TestIntegrationSaveAndLoadDatabase(unittest.TestCase):
         }
         self.db.save_database(budgets)
         results = self.db.load_database()
+        # I can compare this 2 dicts because they have value based equality
         self.assertEqual(results,budgets)
 
     
