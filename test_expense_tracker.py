@@ -6,7 +6,7 @@ import datetime
 
 from expense import Expense
 from expense_tracker import ExpenseTracker
-
+from pathlib import Path
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
  
 # FakeDateTime inherits the behavior of the real datetime.datetime. an instance of FakeDateTime is also considered an instance of datetime.datetime.
@@ -328,6 +328,31 @@ class TestExpenseTracker(unittest.TestCase):
         self.exp_tracker.summary_expenses(args)
 
         mock_print.assert_called_once_with("Total expenses for September: $40.12")
+
+   #----------------------------------------------------------------------------------------------------
+    # export_expenses
+    #----------------------------------------------------------------------------------------------------
+    @patch("builtins.print")
+    def test_export_expenses_successfully(self, mock_print):
+        args = argparse.Namespace(output="./export.csv")
+        expected_path = Path("./export.csv").expanduser().resolve()
+
+        self.exp_tracker.export_expenses(args)
+
+        self.expense_db.export_database.assert_called_once_with(expected_path, self.exp_tracker.expenses)
+        mock_print.assert_called_once_with(f"Expenses exported successfully to {expected_path}")
+
+    @patch("builtins.print")
+    def test_export_expenses_when_database_fails(self, mock_print):
+        args = argparse.Namespace(output="./export.csv")
+        self.expense_db.export_database.side_effect = FileExistsError("File already exists")
+
+        with self.assertRaises(FileExistsError):
+            self.exp_tracker.export_expenses(args)
+
+        self.expense_db.export_database.assert_called_once_with(Path("./export.csv").expanduser().resolve(), self.exp_tracker.expenses)
+        mock_print.assert_called_once_with("Failed to export expenses")
+        
     # you could stop the patches in teardown but that is not great since we started them in setup(). self.add_cleanup is more robust way of doing this
     # The difference is when cleanup gets registered and executed.
     # - tearDown() runs after setUp() completes successfully and the test method runs, even if the test fails. if set up fails teardown does not run which can cause resource leaks to other tests. remember tests need to be isolated
