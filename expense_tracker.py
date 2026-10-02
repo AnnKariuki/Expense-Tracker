@@ -48,7 +48,7 @@ class ExpenseTracker:
             current_budget = self.budgets[(month, year)] # if blocks do not introduce a new scope. variables defined in here can be used in function scope
         else:
             # we will not tell the user to add a budget cause every time someone adds an expense without having configured budgets, the CLI starts nagging them about an optional 
-            # feature. we will also not set a budget user has to do it on their own
+            # feature. we will also not set a budget, the user has to do it on their own
             return 
         monthly_expense = 0
         for expense in self.expenses:
