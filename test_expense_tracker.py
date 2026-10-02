@@ -223,6 +223,111 @@ class TestExpenseTracker(unittest.TestCase):
         self.exp_tracker.delete_expense(args)
         self.exp_tracker.expense_db.save_database.assert_not_called()
         mocked_print.assert_called_once_with("There is no expense with id: 5")
+
+    #----------------------------------------------------------------------------------------------------
+    # set_monthly_budget
+    #----------------------------------------------------------------------------------------------------
+    def test_set_new_monthly_budget_stores_and_saves_budget(self):
+        args = argparse.Namespace(month=10,year=2026,budget=500.0)
+        self.exp_tracker.set_monthly_budget(args)
+        self.assertEqual(self.exp_tracker.budgets[(10, 2026)],500.0)
+        self.budget_db.save_database.assert_called_once_with(self.exp_tracker.budgets)
+
+    @patch("builtins.print")
+    def test_set_existing_monthly_budget_replaces_and_saves_budget(self, mocked_print):
+        args = argparse.Namespace(month=9,year=2026,budget=500.0)
+        self.exp_tracker.set_monthly_budget(args)
+        self.assertEqual(self.exp_tracker.budgets[(9, 2026)],500.0)
+        self.budget_db.save_database.assert_called_once_with(self.exp_tracker.budgets)
+        mocked_print.assert_called_once_with("you updated the budget of the month:September, year, 2026 to 500.0")
+
+    #----------------------------------------------------------------------------------------------------
+    # list_expenses
+    #----------------------------------------------------------------------------------------------------
+    
+    @patch("expense_tracker.tabulate")
+    @patch("builtins.print")
+    def test_list_all_expenses(self, mock_print, mock_tabulate):
+        args = argparse.Namespace(category=None)
+        self.exp_tracker.list_expenses(args)
+
+        expected_rows = [
+            {"id": expense.id, "description": expense.description, "amount": expense.amount, "date": expense.date, "category": expense.category}
+            for expense in self.expenses
+        ]
+
+        mock_tabulate.assert_called_once_with(expected_rows, headers="keys", tablefmt="grid")
+        mock_print.assert_called_once_with(mock_tabulate.return_value)
+
+
+    @patch("expense_tracker.tabulate")
+    @patch("builtins.print")
+    def test_list_expenses_filters_by_category(self, mock_print, mock_tabulate):
+        args = argparse.Namespace(category="GROCERIES")
+        self.exp_tracker.list_expenses(args)
+        # list_expenses does not call datetime.datetime.now() so patching with FakeData here will not work
+        # Expected: tabulate([{'id': 1, 'description': 'Chipotle', 'amount': 20.0, 'date': FakeDate(2026, 10, 1, 22, 0), 'category': 'groceries'}], headers='keys', tablefmt='grid')
+        # Actual: tabulate([{'id': 1, 'description': 'Chipotle', 'amount': 20.0, 'date': datetime.datetime(2026, 9, 27, 14, 50, 23), 'category': 'groceries'}], headers='keys', tablefmt='grid')
+        # patching datetime.datetime does not change the dates of expenses that were already created in setUp().
+        # General rule: Freeze time when the code you're testing depends on the current time, not simply because it works with dates.
+        # use the existing expense's date
+        expected_rows = [
+            {"id": 1, "description": "Chipotle", "amount": 20.0, "date": self.expenses[0].date, "category": "groceries"}
+        ]
+
+        mock_tabulate.assert_called_once_with(expected_rows, headers="keys", tablefmt="grid")
+        mock_print.assert_called_once_with(mock_tabulate.return_value)
+
+
+    @patch("expense_tracker.tabulate")
+    @patch("builtins.print")
+    def test_list_expenses_when_no_category_matches(self, mock_print, mock_tabulate):
+        args = argparse.Namespace(category="travel")
+        self.exp_tracker.list_expenses(args)
+
+        mock_tabulate.assert_called_once_with([], headers="keys", tablefmt="grid")
+        mock_print.assert_called_once_with(mock_tabulate.return_value)
+
+
+    #----------------------------------------------------------------------------------------------------
+    # summary_expenses
+    #----------------------------------------------------------------------------------------------------
+
+    @patch("builtins.print")
+    def test_summary_all_expenses(self, mock_print):
+        args = argparse.Namespace(month=None)
+        self.exp_tracker.summary_expenses(args)
+
+        mock_print.assert_called_once_with("Total expenses: $1040.12")
+
+
+    @patch("expense_tracker.datetime.datetime", FakeDate)
+    @patch("builtins.print")
+    def test_summary_expenses_for_month(self, mock_print):
+        args = argparse.Namespace(month=9)
+        self.exp_tracker.summary_expenses(args)
+
+        mock_print.assert_called_once_with("Total expenses for September: $40.12")
+
+
+    @patch("expense_tracker.datetime.datetime", FakeDate)
+    @patch("builtins.print")
+    def test_summary_month_with_no_expenses(self, mock_print):
+        args = argparse.Namespace(month=10)
+        self.exp_tracker.summary_expenses(args)
+
+        mock_print.assert_called_once_with(" October has no expenses")
+
+
+    @patch("expense_tracker.datetime.datetime", FakeDate)
+    @patch("builtins.print")
+    def test_summary_excludes_expenses_from_other_years(self, mock_print):
+        self.exp_tracker.expenses.append(Expense(id=4, date=datetime.datetime(2025, 9, 27), description="Old expense", amount=500.0, category="groceries"))
+
+        args = argparse.Namespace(month=9)
+        self.exp_tracker.summary_expenses(args)
+
+        mock_print.assert_called_once_with("Total expenses for September: $40.12")
     # you could stop the patches in teardown but that is not great since we started them in setup(). self.add_cleanup is more robust way of doing this
     # The difference is when cleanup gets registered and executed.
     # - tearDown() runs after setUp() completes successfully and the test method runs, even if the test fails. if set up fails teardown does not run which can cause resource leaks to other tests. remember tests need to be isolated
