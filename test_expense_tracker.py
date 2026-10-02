@@ -32,7 +32,8 @@ class TestExpenseTracker(unittest.TestCase):
         self.expense_db = self.autospeced_expense_bd_class_mock.return_value # instance of mocked class
         self.expenses = [
             Expense(id=1, date=datetime.datetime.strptime("2026-09-27 14:50:23", DATE_FORMAT), description="Chipotle", amount=20.0, category="groceries"),
-            Expense(id=2, date=datetime.datetime.strptime("2026-09-27 15:19:49", DATE_FORMAT), description="Movie", amount=20.123, category="entertainment")
+            Expense(id=2, date=datetime.datetime.strptime("2026-09-27 15:19:49", DATE_FORMAT), description="Movie", amount=20.123, category="entertainment"),
+            Expense(id=3, date=datetime.datetime.strptime("2026-11-27 15:19:49", DATE_FORMAT), description="Movie", amount=1000.0, category="entertainment")
         ]
         self.expense_db.load_database.return_value = self.expenses
 
@@ -40,7 +41,7 @@ class TestExpenseTracker(unittest.TestCase):
         self.autospeced_budget_bd_class_mock = self.budget_db_patch.start()
         self.addCleanup(self.budget_db_patch.stop)
         self.budget_db = self.autospeced_budget_bd_class_mock.return_value # what is the return value when we call a class? an instance of the class
-        self.budgets = {(3, 2026): 100.0, (4, 2026): 100.0, (9, 2026): 30.0}
+        self.budgets = {(3, 2026): 100.0, (4, 2026): 100.0, (9, 2026): 50.0, (11,2026):15.0}
         self.budget_db.load_database.return_value = self.budgets
 
         # now we can initialize the ExpenseTracker class cause we have mocked all the dependecies it calls to interact with our csv files which hold prod data
@@ -62,6 +63,43 @@ class TestExpenseTracker(unittest.TestCase):
         self.assertEqual(self.exp_tracker.budgets, self.budgets)
 
     #----------------------------------------------------------------------------------------------------
+    # check_over_budget
+    #----------------------------------------------------------------------------------------------------
+    @patch("builtins.print")
+    def test_check_over_budget_when_no_budget_is_set(self, mock_print):
+        # budget is definitely missing cause a present budget that is not over budget displays same symptoms
+        self.assertNotIn((10, 2026), self.exp_tracker.budgets)
+        result = self.exp_tracker.check_over_budget(10, 2026)
+        self.assertIsNone(result)
+        # warning not printed
+        mock_print.assert_not_called()
+
+    @patch("builtins.print")
+    def test_check_over_budget_below_budget_does_not_warn(self, mock_print):
+        # budget not missing
+        self.assertIn((9, 2026), self.exp_tracker.budgets)
+        result = self.exp_tracker.check_over_budget(9, 2026)
+        self.assertIsNone(result)
+        # warning not printed
+        mock_print.assert_not_called()
+
+    @patch("builtins.print")
+    def test_check_over_budget_equal_to_budget_does_not_warn(self, mock_print):
+        self.exp_tracker.expenses = [Expense(id=1,date=datetime.datetime.strptime("2026-09-27 14:50:23",DATE_FORMAT),description="Chipotle",amount=30.0,category="groceries")]
+        self.exp_tracker.budgets = {(9, 2026): 30.0}
+        self.exp_tracker.check_over_budget(9, 2026)
+        mock_print.assert_not_called()
+
+    @patch("builtins.print")
+    def test_check_over_budget_above_budget_warns(self, mock_print):
+        self.assertIn((11, 2026), self.exp_tracker.budgets)
+        result = self.exp_tracker.check_over_budget(11, 2026)
+        self.assertIsNone(result)
+        # warning not printed
+        mock_print.assert_called_once_with("warning November 2026 expenses 1000.0 exceed your 15.0 budget.")
+
+
+    #----------------------------------------------------------------------------------------------------
     # highest_id
     #----------------------------------------------------------------------------------------------------
     # boundary
@@ -70,7 +108,7 @@ class TestExpenseTracker(unittest.TestCase):
         self.assertEqual(self.exp_tracker.highest_id(), 0)
 
     def test_highest_id_returns_highest_expense_id(self):
-        self.assertEqual(self.exp_tracker.highest_id(), 2) 
+        self.assertEqual(self.exp_tracker.highest_id(), 3) 
 
     #----------------------------------------------------------------------------------------------------
     # add_expense
@@ -82,7 +120,7 @@ class TestExpenseTracker(unittest.TestCase):
         args = argparse.Namespace(description = "buy a car", amount = 100000.0, category = "luxury")
         self.exp_tracker.add_expense(args)
         # this also confirms that we assigned the highest id if the 2 expenses match
-        expected_expense = Expense(id=3, description = "buy a car", amount = 100000.0, category = "luxury", date=date)
+        expected_expense = Expense(id=4, description = "buy a car", amount = 100000.0, category = "luxury", date=date)
         self.assertEqual(expected_expense, self.exp_tracker.expenses[-1])
         #  confirms saves updated expenses
         # self.exp_tracker.expense_db.save_database.assert_called_once_with(self.exp_tracker.expenses)
@@ -104,8 +142,88 @@ class TestExpenseTracker(unittest.TestCase):
         date = FakeDate.now()
         mocked_over_budget_check.assert_called_once_with(date.month, date.year)
 
+    #----------------------------------------------------------------------------------------------------
+    # update_expense
+    #----------------------------------------------------------------------------------------------------
+    def test_update_expense_without_fields_raises_value_error(self):
+        args = argparse.Namespace(id=1, amount=None, description=None, category=None)
+        with self.assertRaises(ValueError):
+            self.exp_tracker.update_expense(args)
 
-    # you could stop the patches in teardown but that is not good practice since we started them in setup()
+    def test_update_expense_updates_amount(self):
+        amount_before = self.exp_tracker.expenses[0].amount
+        args = argparse.Namespace(id=1, amount=100.0, description=None, category=None)
+        self.exp_tracker.update_expense(args)
+        self.assertEqual(self.exp_tracker.expenses[0].amount, 100.0)
+        self.assertNotEqual(self.exp_tracker.expenses[0].amount, amount_before)
+
+    def test_update_expense_updates_description(self):
+        description_before = self.exp_tracker.expenses[0].description
+        args = argparse.Namespace(id=1, amount=None, description="Concert", category=None)
+        self.exp_tracker.update_expense(args)
+        self.assertEqual(self.exp_tracker.expenses[0].description, "Concert")
+        self.assertNotEqual(self.exp_tracker.expenses[0].description, description_before)
+
+    def test_update_expense_updates_category(self):
+        category_before = self.exp_tracker.expenses[0].category
+        args = argparse.Namespace(id=1, amount=None, description=None, category="Fun")
+        self.exp_tracker.update_expense(args)
+        self.assertEqual(self.exp_tracker.expenses[0].category, "fun")
+        self.assertNotEqual(self.exp_tracker.expenses[0].category, category_before)
+
+    @patch("expense_tracker.datetime.datetime", FakeDate)
+    def test_update_expense_preserves_unspecified_fields(self):
+        date_before = self.exp_tracker.expenses[0].date
+        amount_before = self.exp_tracker.expenses[0].amount
+        description_before = self.exp_tracker.expenses[0].description
+        args = argparse.Namespace(id=1, amount=None, description=None, category="Fun")
+        self.exp_tracker.update_expense(args)
+        self.assertEqual(self.exp_tracker.expenses[0].date, date_before)
+        self.assertEqual(self.exp_tracker.expenses[0].amount, amount_before)
+        self.assertEqual(self.exp_tracker.expenses[0].description, description_before)
+
+    def test_update_existing_expense_saves_database(self):
+        args = argparse.Namespace(id=1, amount=100.0, description=None, category=None)
+        self.exp_tracker.update_expense(args)
+        # this works because we mocked the expense_tracker module's expensedatabase
+        # so self.exp_tracker.expense_db is a mock instance therefore we can use assert_called_once_with() on it.
+        self.exp_tracker.expense_db.save_database.assert_called_once_with(self.exp_tracker.expenses)
+
+    @patch("expense_tracker.print")
+    def test_update_nonexistent_expense_does_not_save_database(self, mocked_print):
+        args = argparse.Namespace(id=5, amount=100.0, description=None, category=None)
+        self.exp_tracker.update_expense(args)
+        self.exp_tracker.expense_db.save_database.assert_not_called()
+        mocked_print.assert_called_once_with("There is no expense with id: 5")
+
+    @patch("expense_tracker.ExpenseTracker.check_over_budget")
+    def test_update_amount_checks_budget(self, mocked_check_over_budget):
+        args = argparse.Namespace(id=1, amount=100.0, description=None, category=None)
+        self.exp_tracker.update_expense(args)
+        mocked_check_over_budget.assert_called_once_with(self.exp_tracker.expenses[0].date.month, self.exp_tracker.expenses[0].date.year)
+
+    #----------------------------------------------------------------------------------------------------
+    # delete_expense
+    #----------------------------------------------------------------------------------------------------
+ 
+    def test_delete_existing_expense_removes_expense_and_saves(self):
+        expected_expenses = [Expense(id=2, date=datetime.datetime.strptime( "2026-09-27 15:19:49", DATE_FORMAT), description="Movie", amount=20.123, category="entertainment"), 
+                             Expense(id=3, date=datetime.datetime.strptime("2026-11-27 15:19:49", DATE_FORMAT), description="Movie", amount=1000.0, category="entertainment")]
+        args = argparse.Namespace(id=1)
+        self.exp_tracker.delete_expense(args)
+        self.assertEqual(self.exp_tracker.expenses, expected_expenses)
+        self.exp_tracker.expense_db.save_database.assert_called_once_with(self.exp_tracker.expenses)
+        # the tests below are not necessary. the way we did it about is correct
+        self.assertEqual(len(self.exp_tracker.expenses), 2)
+        self.assertNotEqual(self.exp_tracker.expenses[0].id, 1)
+
+    @patch("expense_tracker.print")
+    def test_delete_nonexistent_expense_does_not_save(self, mocked_print):
+        args = argparse.Namespace(id=5)
+        self.exp_tracker.delete_expense(args)
+        self.exp_tracker.expense_db.save_database.assert_not_called()
+        mocked_print.assert_called_once_with("There is no expense with id: 5")
+    # you could stop the patches in teardown but that is not great since we started them in setup(). self.add_cleanup is more robust way of doing this
     # The difference is when cleanup gets registered and executed.
     # - tearDown() runs after setUp() completes successfully and the test method runs, even if the test fails. if set up fails teardown does not run which can cause resource leaks to other tests. remember tests need to be isolated
     # - addCleanup() registers cleanup immediately. The registered cleanup still runs even if setUp() raises an exception partway through.
