@@ -15,6 +15,7 @@ import datetime
 from tabulate import tabulate
 from enum import Enum
 from budget_database import BudgetDatabase
+from pathlib import Path
 
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 class Month(Enum):
@@ -195,4 +196,13 @@ class ExpenseTracker:
         self.budgets[(month, year)] = budget
         self.budget_db.save_database(self.budgets) # need to persist data to db cause in memory dict will dissapear plus the changes as soon as process ends
         
-         
+
+    def export_expenses(self, args: argparse.Namespace):
+        # Expand path for the current user into absolute home directory path. resolve() converts the resulting path into an absolute path and resolves symbolic links
+        full_path = Path(args.output).expanduser().resolve()
+        try:
+            self.expense_db.export_database(full_path, self.expenses)
+        except:
+            print(f"Failed to export expenses")
+            raise
+        print(f"Expenses exported successfully to {full_path}")

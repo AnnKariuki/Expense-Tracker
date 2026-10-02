@@ -63,6 +63,12 @@ def main() -> None:
     budget_subparser.add_argument("--budget", type=check_positive_float, required=True) # next layer(business logic layer) does not need to revalidate
     budget_subparser.set_defaults(func=tracker.set_monthly_budget)
 
+    export_subparser = subparsers.add_parser('export', help="To export all your expenses to a csv location of your choosing run: <expense-tracker> export --output <filename.csv>")
+    export_subparser.add_argument("--output", required = True)
+    export_subparser.set_defaults(func=tracker.export_expenses)
+
+
+
     args = parser.parse_args()
     args.func(args)
     

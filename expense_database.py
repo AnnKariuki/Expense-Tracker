@@ -51,19 +51,7 @@ class ExpenseDatabase:
         # Putting the temp file in the same directory ensures that. when using tempfile you use uses the operating system's default temporary directory
         try: 
             with temp: # temp files/dirs from tempfile module can be used as context managers
-                fieldnames = ["id","date", "description", "amount", "category"]
-                writer = csv.DictWriter(temp, fieldnames=fieldnames)
-                writer.writeheader()
-                for expense in expenses:
-                    row = {
-                        "id": str(expense.id),
-                        "date": expense.date.strftime(DATE_FORMAT),
-                        "description": expense.description,
-                        "amount": str(expense.amount),
-                        "category": expense.category
-                    }
-                    # have to pass in a dictionary to writerow
-                    writer.writerow(row)
+                self._write_expenses(temp, expenses)
             # temp is closed at this point.
             # Replace the old database only after the entire new CSV
             # has been successfully written.
@@ -72,3 +60,25 @@ class ExpenseDatabase:
             # Clean up temp file if replace fails. we can access the file after we exited the context manager because we did delete=False so it was not immediately deleted
             os.unlink(temp.name) # used to permanently delete a file path from the file system
             raise
+
+    def export_database(self, output_path, expenses: list[Expense]):
+        # x mode stands for exclusive creation. It is used to open a file for writing, but only if the file does not already exist. we do not want to overwrite any data
+        # If we attempt to use 'x' mode on a file path that already exists, Python will safely refuse to open it and will raise a FileExistsError
+        with open(output_path, "x", newline="") as csv_file:
+            self._write_expenses(csv_file, expenses)
+
+    def _write_expenses(self, csv_file, expenses: list[Expense]) -> None:
+        fieldnames = ["id","date", "description", "amount", "category"]
+        writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+        writer.writeheader()
+
+        for expense in expenses:
+            row = {
+                "id": str(expense.id),
+                "date": expense.date.strftime(DATE_FORMAT),
+                "description": expense.description,
+                "amount": str(expense.amount),
+                "category": expense.category
+            }
+            # have to pass in a dictionary to writerow
+            writer.writerow(row)
