@@ -7,7 +7,7 @@ from budget_database import BudgetDatabase
 import csv
 import os
 class TestLoadBudgetDatabase(unittest.TestCase):
-    # new_callable allows you to specify a different class, or callable object, that will be called to create the new object. By default AsyncMock is used for async functions and MagicMock for the rest.
+    # new_callable allows us to specify a different class, or callable object, that will be called to create the new object. By default AsyncMock is used for async functions and MagicMock for the rest.
     @patch('builtins.open', new_callable=mock_open, 
            read_data="month,year,budget\n3,2026,100.0\n4,2026,100.0\n9,2026,30.0")
     def test_load_database_loads_data(self, mock_file):
@@ -107,32 +107,33 @@ if __name__ == '__main__':
 
 
 # 1. Why PermissionError works but UnicodeDecodeError doesn't
-# When you write side_effect=PermissionError, you're giving Mock an exception class.
+# When we write side_effect=PermissionError, we're giving Mock an exception class.
 # When the mocked open() gets called, Mock essentially tries to raise an instance of that exception.
 # PermissionError can be constructed with no arguments, so that works.
 # UnicodeDecodeError cannot. Python requires information about the failed decoding operation: the encoding, bytes being decoded, start position, end position, and reason.
-# That's exactly what your error is telling you:
+# That's exactly what our error is telling us:
 # TypeError: function takes exactly 5 arguments (0 given)
 
-# So your load_database() isn't the problem. The mock tried to construct UnicodeDecodeError with no arguments and failed before it could raise one.
-# If you want to simulate UnicodeDecodeError, you need to give side_effect an already-created UnicodeDecodeError instance with its required information, rather than just giving it the class.
+# So our load_database() isn't the problem. The mock tried to construct UnicodeDecodeError with no arguments and failed before it could raise one.
+# If we want to simulate UnicodeDecodeError, we need to give side_effect an already-created UnicodeDecodeError instance with its required information, rather than just giving it the class.
+
 # 2. Why adding new_callable=mock_open breaks
 # These two concepts do different jobs.
-# When you do:
+# When we do:
 # patch(..., side_effect=PermissionError)
 # patch creates its normal MagicMock to replace open, and configures that mock's side_effect.
-# But when you say:
+# But when we say:
 # new_callable=mock_open
-# you're telling patch:
+# we're telling patch:
 # Don't create the normal mock. Call mock_open(...) to create my replacement.
 
-# Then patch tries to pass your additional configuration into mock_open.
-# In your case, it effectively tries to create the replacement using mock_open(side_effect=...).
-# But mock_open doesn't accept a side_effect parameter. That's why you get:
+# Then patch tries to pass our additional configuration into mock_open.
+# In our case, it effectively tries to create the replacement using mock_open(side_effect=...).
+# But mock_open doesn't accept a side_effect parameter. That's why we get:
 # TypeError: mock_open() got an unexpected keyword argument 'side_effect'
 
-# So for these exception tests, you don't need mock_open at all.
-# You're testing:
+# So for these exception tests, we don't need mock_open at all.
+# we're testing:
 # open()
 #   ↓
 # raises PermissionError
@@ -142,7 +143,7 @@ if __name__ == '__main__':
 # re-raises it
 
 # No fake file ever needs to exist because open() fails immediately.
-# mock_open is useful for your other test where you want:
+# mock_open is useful for our other test where we want:
 # open()
 #   ↓
 # succeeds

@@ -163,7 +163,3 @@ The export operation does not overwrite an existing file.
 - **expense_tracker.py**: Implements business logic for managing expenses and budgets.
 - **expense_database.py**: Handles CSV serialization and persistence of expenses.
 - **budget_database.py**: Handles CSV serialization and persistence of budgets.
-
-## Project URL
-
-https://roadmap.sh/projects/expense-tracker

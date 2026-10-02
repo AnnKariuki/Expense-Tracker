@@ -24,7 +24,7 @@ class TestExpenseTracker(unittest.TestCase):
         # need patch here but we will do it manually instead of as a decorator or context manager
         self.expense_db_patch = patch("expense_tracker.ExpenseDatabase", autospec=True) # Patch the name in the module where the code under test looks it up, not necessarily where the class was originally defined.
         self.autospeced_expense_bd_class_mock = self.expense_db_patch.start() # mocked class
-        # shold be stop not stop() When Python evaluates the line, it immediately executes stop(), removing your patch before ExpenseTracker is instantiated.
+        # shold be stop not stop() When Python evaluates the line, it immediately executes stop(), removing our patch before ExpenseTracker is instantiated.
         # Then it passes the return value of stop() to addCleanup(), rather than passing the cleanup function itself.
         # we should be passing the function without executing it. unittest will call it during cleanup.
         self.addCleanup(self.expense_db_patch.stop) # multiple add clean ups  are executed in Last-In, First-Out (LIFO) order
@@ -45,7 +45,7 @@ class TestExpenseTracker(unittest.TestCase):
         self.budget_db.load_database.return_value = self.budgets
 
         # now we can initialize the ExpenseTracker class cause we have mocked all the dependecies it calls to interact with our csv files which hold prod data
-        # if we didn't ExpenseTracker() would call __init-_ which would load all prod data and that is not what you want in tests. test and prod data must be isolated
+        # if we didn't ExpenseTracker() would call __init-_ which would load all prod data and that is not what we want in tests. test and prod data must be isolated
         self.exp_tracker = ExpenseTracker() 
 
         # now in the tests we will be usung exp_tracker public interface
@@ -269,7 +269,7 @@ class TestExpenseTracker(unittest.TestCase):
         # Expected: tabulate([{'id': 1, 'description': 'Chipotle', 'amount': 20.0, 'date': FakeDate(2026, 10, 1, 22, 0), 'category': 'groceries'}], headers='keys', tablefmt='grid')
         # Actual: tabulate([{'id': 1, 'description': 'Chipotle', 'amount': 20.0, 'date': datetime.datetime(2026, 9, 27, 14, 50, 23), 'category': 'groceries'}], headers='keys', tablefmt='grid')
         # patching datetime.datetime does not change the dates of expenses that were already created in setUp().
-        # General rule: Freeze time when the code you're testing depends on the current time, not simply because it works with dates.
+        # General rule: Freeze time when the code our testing depends on the current time, not simply because it works with dates.
         # use the existing expense's date
         expected_rows = [
             {"id": 1, "description": "Chipotle", "amount": 20.0, "date": self.expenses[0].date, "category": "groceries"}
@@ -352,8 +352,8 @@ class TestExpenseTracker(unittest.TestCase):
 
         self.expense_db.export_database.assert_called_once_with(Path("./export.csv").expanduser().resolve(), self.exp_tracker.expenses)
         mock_print.assert_called_once_with("Failed to export expenses")
-        
-    # you could stop the patches in teardown but that is not great since we started them in setup(). self.add_cleanup is more robust way of doing this
+
+    # we could stop the patches in teardown but that is not great since we started them in setup(). self.add_cleanup is more robust way of doing this
     # The difference is when cleanup gets registered and executed.
     # - tearDown() runs after setUp() completes successfully and the test method runs, even if the test fails. if set up fails teardown does not run which can cause resource leaks to other tests. remember tests need to be isolated
     # - addCleanup() registers cleanup immediately. The registered cleanup still runs even if setUp() raises an exception partway through.
@@ -368,7 +368,7 @@ if __name__ == "__main__":
 # patch(...)
 #     = "Replace the object that MY CODE is going to use with a fake."
 
-# Python provides you with three ways to call patch():
+# Python provides us with three ways to call patch():
 
 # Decorators for a function or a class.
 # Context manager
@@ -389,13 +389,13 @@ if __name__ == "__main__":
 # self.expense_db = ExpenseDatabase()
 # self.expenses = self.expense_db.load_database()
 
-# when we write self.autospeced_expense_bd_class_mock.return_value we're accessing the mock instance that will be returned when your production code calls ExpenseDatabase()
-# 3. Why can't you omit the first .return_value?
-# Suppose you write:
+# when we write self.autospeced_expense_bd_class_mock.return_value we're accessing the mock instance that will be returned when our production code calls ExpenseDatabase()
+# 3. Why can't we omit the first .return_value?
+# Suppose we write:
 # self.autospeced_expense_bd_class_mock.load_database.return_value = self.expenses
 
-# You're trying to configure load_database() directly on the mocked class.
-# But your production code doesn't call:
+# we're trying to configure load_database() directly on the mocked class.
+# But production code doesn't call:
 # ExpenseDatabase.load_database()
 
 # It calls:
